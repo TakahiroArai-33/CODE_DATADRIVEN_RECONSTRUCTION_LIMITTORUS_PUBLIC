@@ -1,0 +1,26 @@
+# Operating-system and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Locally built GPU container
+CupyContainer.sif
+
+# Generated configurations, logs, simulation data, and results
+config_lists/
+config_lists_short/
+json/
+json_short/
+stdout/
+CoupledModelSimulationDATA/
+Results/
+Results_*/
+Figure_OUTPUT/*
+!Figure_OUTPUT/plot.png
+*.log
