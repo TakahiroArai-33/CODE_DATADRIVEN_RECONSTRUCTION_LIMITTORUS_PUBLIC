@@ -4,8 +4,8 @@
 """Inspect inferred phase equations.
 
 The script saves only posterior-mean colormaps of the nonconstant terms. It
-prints constant terms, errors against reference values, and selected Fourier
-coefficients to standard output.
+prints the inferred and theoretical noise covariances, constant terms, errors
+against reference values, and selected Fourier coefficients to standard output.
 """
 
 from __future__ import annotations
@@ -54,6 +54,18 @@ TRUE_COUPLING_FILE = PHASE_EQUATION_DIR / "CouplingFunction_8193.npz"
 
 L = 125.0
 
+# This coefficient was precomputed from the spatial and temporal phase
+# sensitivity functions Z_s = (-U_s^u, -U_s^v) and
+# Z_t = (U_t^u, U_t^v). Their spatial inner products were averaged over the
+# temporal phase. For SPDE noise strength sigma, E_theory = sigma**2 * C.
+PHASE_NOISE_COVARIANCE_COEFFICIENT = np.array(
+    [
+        [4.97976032004664812e04, -8.73988532241410212e03],
+        [-8.73988532241410212e03, 1.79108047214241105e03],
+    ],
+    dtype=float,
+)
+
 # Fourier modes reported for comparison with reference values.
 # (m_s, m_t) correspond to the Delta Phi and Delta Theta directions.
 FOURIER_MODES_TO_PRINT = (
@@ -94,6 +106,8 @@ def load_bayes_data(path: Path) -> dict[str, np.ndarray]:
             "param_a1": np.asarray(data["param_a1"], dtype=np.complex128).copy(),
             "param_a2": np.asarray(data["param_a2"], dtype=np.complex128).copy(),
             "m_profile": np.asarray(data["m_profile"], dtype=int).copy(),
+            "sqrt_E1": np.asarray(data["sqrt_E1"], dtype=float).copy(),
+            "sqrt_E2": np.asarray(data["sqrt_E2"], dtype=float).copy(),
         }
         if "error1" in data.files:
             result["error1"] = np.asarray(data["error1"]).copy()
@@ -202,6 +216,31 @@ def load_true_fourier_coefficients(
 def _format_complex(value: complex) -> str:
     value = complex(value)
     return f"{value.real:+.8e}{value.imag:+.8e}j"
+
+
+def print_noise_covariance_comparison(
+    bayes: dict[str, np.ndarray],
+    sigma: float,
+) -> None:
+    """Print inferred phase-noise covariances beside E = sigma**2 * C."""
+    theory = sigma**2 * PHASE_NOISE_COVARIANCE_COEFFICIENT
+    estimate1 = bayes["sqrt_E1"] @ bayes["sqrt_E1"].T
+    estimate2 = bayes["sqrt_E2"] @ bayes["sqrt_E2"].T
+
+    print("\n[Phase-noise covariance E: estimate vs theory]")
+    print("E_theory = sigma^2 * C")
+    print("component       theory       estimate1       estimate2")
+    for label, row, column in (
+        ("E_ss", 0, 0),
+        ("E_st", 0, 1),
+        ("E_tt", 1, 1),
+    ):
+        print(
+            f"{label:<10s} "
+            f"{theory[row, column]: .8e}  "
+            f"{estimate1[row, column]: .8e}  "
+            f"{estimate2[row, column]: .8e}"
+        )
 
 
 def _constant_estimates(bayes: dict[str, np.ndarray]) -> dict[str, complex]:
@@ -445,6 +484,7 @@ def process_file(file_path: Path, output_dir: Path = OUTPUT_DIR) -> Path:
     print("\n" + "=" * 88)
     print(f"source={file_path}")
     print(f"epsilon={epsilon:.8e} sigma={sigma:.8e} sigma^2={sigma**2:.8e}")
+    print_noise_covariance_comparison(bayes, sigma)
     print_constant_comparison(bayes, sigma, true_s, true_t)
     print_phase_equation_errors(means, truth, bayes)
     print_fourier_coefficients(bayes, true_s, true_t)
