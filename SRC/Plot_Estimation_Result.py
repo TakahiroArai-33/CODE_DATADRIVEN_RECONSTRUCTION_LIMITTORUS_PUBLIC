@@ -222,25 +222,24 @@ def print_noise_covariance_comparison(
     bayes: dict[str, np.ndarray],
     sigma: float,
 ) -> None:
-    """Print inferred phase-noise covariances beside E = sigma**2 * C."""
+    """Print theoretical and inferred phase-noise covariance matrices."""
     theory = sigma**2 * PHASE_NOISE_COVARIANCE_COEFFICIENT
     estimate1 = bayes["sqrt_E1"] @ bayes["sqrt_E1"].T
     estimate2 = bayes["sqrt_E2"] @ bayes["sqrt_E2"].T
 
-    print("\n[Phase-noise covariance E: estimate vs theory]")
-    print("E_theory = sigma^2 * C")
-    print("component       theory       estimate1       estimate2")
-    for label, row, column in (
-        ("E_ss", 0, 0),
-        ("E_st", 0, 1),
-        ("E_tt", 1, 1),
-    ):
-        print(
-            f"{label:<10s} "
-            f"{theory[row, column]: .8e}  "
-            f"{estimate1[row, column]: .8e}  "
-            f"{estimate2[row, column]: .8e}"
+    def format_matrix(matrix: np.ndarray) -> str:
+        return np.array2string(
+            matrix,
+            formatter={"float_kind": lambda value: f"{value: .8e}"},
         )
+
+    print("\n[Phase-noise covariance E]")
+    print("Theory E = sigma^2 * C")
+    print(format_matrix(theory))
+    print("\nE1 estimate")
+    print(format_matrix(estimate1))
+    print("\nE2 estimate")
+    print(format_matrix(estimate2))
 
 
 def _constant_estimates(bayes: dict[str, np.ndarray]) -> dict[str, complex]:
