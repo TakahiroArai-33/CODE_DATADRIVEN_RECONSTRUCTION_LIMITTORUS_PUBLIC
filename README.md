@@ -5,8 +5,7 @@
 GPU computations use `CupyContainer.sif`, a Singularity image built from
 [`cupy/cupy:v13.6.0`](https://hub.docker.com/r/cupy/cupy/?tag=v13.6.0).
 The `SRC/wfl_*.sh` scripts are submitted as PBS jobs and run the container with
-`singularity exec --nv`. Queue names and GPU resource options are not fixed because
-they depend on the cluster.
+`singularity exec --nv`.
 
 The plotting script was tested with:
 
@@ -22,7 +21,16 @@ The current parameters are:
 - Coupling strength: `epsilon = 1.0e-6`
 - Noise strength: `sigma = 1.0e-6` only
 
-### 1. Build the GPU container
+
+
+### 1. Configure the PBS job scripts
+
+The `SRC/wfl_*.sh` files are PBS job scripts used to run GPU computations.
+Before submitting them, configure the PBS section (the `#PBS` directives) for
+your execution environment, including the queue, wall time, GPU resources, and
+account/project settings required by your cluster.
+
+### 2. Build the GPU container
 
 Run the following command from the project root:
 
@@ -30,7 +38,7 @@ Run the following command from the project root:
 singularity build CupyContainer.sif docker://cupy/cupy:v13.6.0
 ```
 
-### 2. Generate the SPDE data
+### 3. Generate the SPDE data
 
 ```bash
 bash SRC/All_SPDE_run.sh
@@ -41,7 +49,7 @@ bash SRC/All_SPDE_run_short.sh
 `SRC/All_SPDE_run_short.sh` submits `SRC/wfl_run_SPDE_short.sh`.
 Wait for all PBS jobs to finish before continuing.
 
-### 3. Run phase calculation and Bayesian inference
+### 4. Run phase calculation and Bayesian inference
 
 Submit the following wfl script with `qsub`, adding any queue and GPU resource
 options required by the cluster:
@@ -53,7 +61,7 @@ qsub SRC/wfl_LocalCalculationProtocol.sh
 `SRC/wfl_LocalCalculationProtocol.sh` calls
 `SRC/LocalCalculationProtocol_GPU.sh`.
 
-### 4. Generate the output
+### 5. Generate the output
 
 After the phase-calculation and Bayesian-inference job finishes, run:
 
