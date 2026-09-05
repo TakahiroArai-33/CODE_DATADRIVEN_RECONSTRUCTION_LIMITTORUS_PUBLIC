@@ -9,6 +9,8 @@ This repository contains the code for the following paper:
 
 ## Environment
 
+GPU computations were performed using NVIDIA A100 GPUs.
+
 GPU computations use `CupyContainer.sif`, a Singularity image built from
 [`cupy/cupy:v13.6.0`](https://hub.docker.com/r/cupy/cupy/?tag=v13.6.0).
 The `SRC/wfl_*.sh` scripts are submitted as PBS jobs and run the container with
@@ -37,6 +39,31 @@ Before submitting them, configure the PBS section (the `#PBS` directives) for
 your execution environment, including the queue, wall time, GPU resources, and
 account/project settings required by your cluster.
 
+Adjust the `qsub` commands and options in `SRC/All_SPDE_run.sh` and
+`SRC/All_SPDE_run_short.sh` to match your computing environment. If you only
+need to add `qsub` options, the following examples show two ways to specify
+them. Both examples use the PBS `select` and `ngpus` options.
+
+#### Set options in the scripts
+
+Edit `QSUB_GPU_ARGS` in each script:
+
+```bash
+# Replace GPU_QUEUE_NAME, adjust resources, and replace or remove <OTHER_OPTIONS>.
+QSUB_GPU_ARGS=(-q GPU_QUEUE_NAME -l select=1:ngpus=1 "<OTHER_OPTIONS>")
+```
+
+#### Set options with an environment variable
+
+You can also set `QSUB_GPU_OPTIONS` in the shell before running the scripts:
+
+```bash
+# Replace GPU_QUEUE_NAME, adjust resources, and replace or remove <OTHER_OPTIONS>.
+export QSUB_GPU_OPTIONS='-q GPU_QUEUE_NAME -l select=1:ngpus=1 <OTHER_OPTIONS>'
+```
+
+A nonempty `QSUB_GPU_OPTIONS` overrides `QSUB_GPU_ARGS` in both scripts.
+
 ### 2. Build the GPU container
 
 Run the following command from the project root:
@@ -46,6 +73,11 @@ singularity build CupyContainer.sif docker://cupy/cupy:v13.6.0
 ```
 
 ### 3. Generate the SPDE data
+
+SPDE simulations use multiple GPUs by running independent simulation jobs in
+parallel, with one GPU per job. Edit `NUM_CHUNKS` (currently `10`) at the top of
+`SRC/All_SPDE_run.sh` and `SRC/All_SPDE_run_short.sh` to set the number of job
+batches submitted by each script.
 
 ```bash
 bash SRC/All_SPDE_run.sh
