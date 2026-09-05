@@ -1,8 +1,9 @@
 This repository contains the code for the following paper:
 
-* Takahiro Arai, Toshio Aoyagi, and Yoji Kawamura, 
-“Data-driven reconstruction of spatiotemporal phase dynamics for traveling and oscillating patterns via Bayesian inference,” 
-[arXiv:2604.23727](https://doi.org/10.48550/arXiv.2604.23727).
+* Takahiro Arai, Toshio Aoyagi, and Yoji Kawamura, “Data-driven reconstruction of spatiotemporal phase dynamics for traveling and oscillating patterns via Bayesian inference,” [arXiv:2604.23727](https://doi.org/10.48550/arXiv.2604.23727).
+
+This work was supported by JSPS KAKENHI Grant Numbers JP24H00723, JP24K06910, JP25H01474, JP25K01160, JP25K22831, JP26H00477, JP26H02349, and JP26K21344.
+Numerical simulations were conducted using Earth Simulator at JAMSTEC.
 
 
 # GPU Workflow
