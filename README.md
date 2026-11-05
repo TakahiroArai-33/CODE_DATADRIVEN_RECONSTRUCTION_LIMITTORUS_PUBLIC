@@ -3,14 +3,22 @@ This repository contains the code for the following paper:
 * Takahiro Arai, Toshio Aoyagi, and Yoji Kawamura, “Data-driven reconstruction of spatiotemporal phase dynamics for traveling and oscillating patterns via Bayesian inference,” [arXiv:2604.23727](https://doi.org/10.48550/arXiv.2604.23727).
 
 This work was supported by JSPS KAKENHI Grant Numbers JP24H00723, JP24K06910, JP25H01474, JP25K01160, JP25K22831, JP26H00477, JP26H02349, and JP26K21344.
-Numerical simulations were conducted using Earth Simulator at JAMSTEC.
+Numerical simulations were performed on the Earth Simulator (ES4) at the
+Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
 
 
 # GPU Workflow
 
 ## Environment
 
-GPU computations were performed using NVIDIA A100 GPUs.
+The computational environment used in this work is summarized below.
+
+| Component | Details |
+| --- | --- |
+| System | [Earth Simulator (ES4)](https://www.jamstec.go.jp/es/en/) at JAMSTEC |
+| GPU | NVIDIA A100; one GPU per SPDE job |
+| GPU library | CuPy 13.6.0 |
+| Execution | Singularity container and PBS batch jobs |
 
 GPU computations use `CupyContainer.sif`, a Singularity image built from
 [`cupy/cupy:v13.6.0`](https://hub.docker.com/r/cupy/cupy/?tag=v13.6.0).
@@ -112,3 +120,34 @@ python SRC/Plot_Estimation_Result.py
 By default, the script reads the result generated in
 `Results/BayesianInference`. Edit `BAYES_FILES` in
 `SRC/Plot_Estimation_Result.py` only when plotting results stored elsewhere.
+
+
+### 6. Note for Computational time
+
+Generating the SPDE data is the most time-consuming step. 
+With the current parameters, each long trajectory takes approximately 7 hours on one GPU.
+The long trajectories are distributed across parallel GPU jobs using the PBS job scheduler.
+GPUs are also used for data subsampling when preparing the dataset for Bayesian inference.
+
+
+
+# Sample code for phase calculation
+
+Reproducing the full results is computationally intensive and generates large amounts of data. 
+The workflow described above uses GPUs and the PBS job scheduler.
+
+For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ and spatial phase Φ from a single trajectory of two coupled systems and compares the results with theory. It runs on a CPU without PBS or a GPU.
+
+The reference environment for this notebook is:
+
+| Software | Version |
+| --- | --- |
+| Python | 3.10.18 |
+| NumPy | 1.26.4 |
+| SciPy | 1.12.0 |
+| Numba | 0.59.1 |
+| Matplotlib | 3.10.6 |
+| tqdm | 4.67.1 |
+| JupyterLab | 4.4.6 |
+| ipykernel | 6.30.1 |
+| ipywidgets | 8.1.7 |
