@@ -146,7 +146,7 @@ Overall, data processing and Bayesian inference, including file input and output
 
 # Sample code for calculation of the phase
 
-Reproducing the full results is computationally intensive and generates large amounts of data. 
+Reproducing the full results reported in the cited paper is computationally intensive and generates large amounts of data.
 The workflow described above uses GPUs and the PBS job scheduler.
 
 For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ and spatial phase Φ from a single trajectory of two coupled systems and compares the results with theory. It runs on a CPU without PBS or a GPU.
@@ -163,6 +163,7 @@ The reference environment for this notebook is:
 - ipykernel 6.30.1
 - ipywidgets 8.1.7
 
+`SampleCode/data/` contains the data required to run the notebook, including the limit-torus solution and data for the phase equations derived using the adjoint method. `SampleCode/output/` contains results from a previous run. Re-running the notebook will overwrite output files with the same names.
 
 
 ---
