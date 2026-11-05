@@ -124,14 +124,22 @@ By default, the script reads the result generated in
 
 ### 6. Note for Computational time
 
-Generating the SPDE data is the most time-consuming step. 
-With the current parameters, each long trajectory takes approximately 7 hours on one GPU.
-The long trajectories are distributed across parallel GPU jobs using the PBS job scheduler.
+#### SPDE
+
+Generating the SPDE data is the most time-consuming step. With the current parameters, each long trajectory takes approximately 7 hours on one GPU. In our experiments, generating 64 long trajectories for a single value of σ took approximately two days, with 10 GPU jobs running in parallel using the PBS job scheduler.
+
+Although we used NVIDIA A100 GPUs in our experiments, each SPDE simulation uses only 1,024 distinct spatial grid points. Less powerful GPUs may also be suitable, although their performance has not been evaluated. The SPDE simulations could, in principle, also be performed on a CPU.
+
+#### Phase calculation and Bayesian inference
+
+Temporal phase calculation using linear interpolation was performed entirely on the CPU. 
+For the method described in Appendix B of the manuscript cited above, GPUs were used for the Hilbert transform and the Fourier-based transformation from protophase to phase.
+
 GPUs are also used for data subsampling when preparing the dataset for Bayesian inference.
 
+----
 
-
-# Sample code for phase calculation
+# Sample code for calculation of the phase
 
 Reproducing the full results is computationally intensive and generates large amounts of data. 
 The workflow described above uses GPUs and the PBS job scheduler.
@@ -140,14 +148,22 @@ For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculat
 
 The reference environment for this notebook is:
 
-| Software | Version |
-| --- | --- |
-| Python | 3.10.18 |
-| NumPy | 1.26.4 |
-| SciPy | 1.12.0 |
-| Numba | 0.59.1 |
-| Matplotlib | 3.10.6 |
-| tqdm | 4.67.1 |
-| JupyterLab | 4.4.6 |
-| ipykernel | 6.30.1 |
-| ipywidgets | 8.1.7 |
+- Python 3.10.18
+- NumPy 1.26.4
+- SciPy 1.12.0
+- Numba 0.59.1
+- Matplotlib 3.10.6
+- tqdm 4.67.1
+- JupyterLab 4.4.6
+- ipykernel 6.30.1
+- ipywidgets 8.1.7
+
+
+
+---
+
+# License
+
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 Takahiro Arai.
