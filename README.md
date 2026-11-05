@@ -3,6 +3,7 @@ This repository contains the code for the following paper:
 * Takahiro Arai, Toshio Aoyagi, and Yoji Kawamura, “Data-driven reconstruction of spatiotemporal phase dynamics for traveling and oscillating patterns via Bayesian inference,” [arXiv:2604.23727](https://doi.org/10.48550/arXiv.2604.23727).
 
 This work was supported by JSPS KAKENHI Grant Numbers JP24H00723, JP24K06910, JP25H01474, JP25K01160, JP25K22831, JP26H00477, JP26H02349, and JP26K21344.
+
 Numerical simulations were performed on the Earth Simulator (ES4) at the
 Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
 
@@ -122,20 +123,24 @@ By default, the script reads the result generated in
 `SRC/Plot_Estimation_Result.py` only when plotting results stored elsewhere.
 
 
-### 6. Note for Computational time
+
+### 6. Notes on GPU usage and computational time
 
 #### SPDE
 
-Generating the SPDE data is the most time-consuming step. With the current parameters, each long trajectory takes approximately 7 hours on one GPU. In our experiments, generating 64 long trajectories for a single value of σ took approximately two days, with 10 GPU jobs running in parallel using the PBS job scheduler.
+Generating the SPDE data is the most time-consuming step. With the current parameters, each long trajectory takes approximately 7 hours on one GPU. In our experiments, generating 64 long trajectories for a single value of σ took approximately 2 days, with 10 GPU jobs running in parallel using the PBS job scheduler.
 
 Although we used NVIDIA A100 GPUs in our experiments, each SPDE simulation uses only 1,024 distinct spatial grid points. Less powerful GPUs may also be suitable, although their performance has not been evaluated. The SPDE simulations could, in principle, also be performed on a CPU.
 
 #### Phase calculation and Bayesian inference
 
-Temporal phase calculation using linear interpolation was performed entirely on the CPU. 
-For the method described in Appendix B of the manuscript cited above, GPUs were used for the Hilbert transform and the Fourier-based transformation from protophase to phase.
+Temporal phases are obtained by linear interpolation on the CPU. The Appendix B method uses GPUs for the Hilbert transform and Fourier-based phase conversion.
 
-GPUs are also used for data subsampling when preparing the dataset for Bayesian inference.
+GPUs are also used for data subsampling when preparing the dataset for Bayesian inference and for large-scale tensor contractions and summations during the iterative updates.
+The iterative Bayesian updates took approximately 100 seconds in total for both systems (three updates per system), excluding data loading, preprocessing, basis construction, and output generation. Data subsampling was not timed separately.
+
+Overall, data processing and Bayesian inference, including file input and output, are expected to take approximately two hours per value of σ.
+
 
 ----
 
