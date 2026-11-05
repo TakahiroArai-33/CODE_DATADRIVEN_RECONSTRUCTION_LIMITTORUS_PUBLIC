@@ -24,3 +24,6 @@ Results_*/
 Figure_OUTPUT/*
 !Figure_OUTPUT/plot.png
 *.log
+
+#
+Memo/*.md
