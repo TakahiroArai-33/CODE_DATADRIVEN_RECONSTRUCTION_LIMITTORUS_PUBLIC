@@ -177,6 +177,7 @@ The reference environment for this notebook is:
 
 `SampleCode/data/` contains the data required to run the notebook, including the limit-torus solution and data for the phase equations derived using the adjoint method. `SampleCode/output/` contains results from a previous run. Re-running the notebook will overwrite output files with the same names.
 
+また、計算済みのデータをzenodoに配置しておくので、`SampleCode/output`に使用して使用することができる。(URL)
 
 ---
 
