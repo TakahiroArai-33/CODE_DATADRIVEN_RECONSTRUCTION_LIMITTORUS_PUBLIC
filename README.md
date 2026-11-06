@@ -151,21 +151,26 @@ The most computationally demanding step is data generation through SPDE simulati
 The method we proposed in the above reference has a relatively low computational cost.
 Below, we summarize the hardware used, computation times, and storage requirements.
 
-Storing the generated time series and phase data for all values of $\sigma$ used in this study requires approximately 1 TB of storage.
+Storing the generated time series, phase data, and Bayesian inference results for all values of $\sigma$ used in this study requires approximately 1 TB of storage.
+
 
 #### SPDE simulations
 
-With the parameter settings used in this study, generating a single long trajectory took approximately 7 hours on one NVIDIA A100 GPU. 
+With the parameter settings used in this study, generating a single long trajectory up to $\epsilon t=10$ took approximately 7–8 hours on one NVIDIA A100 GPU.
 Generating 64 long trajectories for a single value of σ took approximately 2 days, with 10 GPU jobs running in parallel under the PBS job scheduler.
 
-Each SPDE simulation uses a spatial grid with 1,024 distinct points. Less powerful GPUs may also be suitable, although their performance has not been evaluated. In principle, these simulations could also be performed on a CPU.
-
 The saved data require approximately 700 MB per long trajectory, or approximately 45 GB for all 64 trajectories at each value of σ. 
-The stored time series contain $\tilde{A}_i$ and $\bar{u}_i$, with a sampling interval of 1.0; the full spatial profiles of $X_i(x,t)$ are not saved at every sampling time.
+The stored time series contain $\tilde{A}_i$ and $\bar{u}_i$, with a sampling interval of 1.0; 
+the full spatial profiles of $X_i(x,t)$ are not saved at every sampling time.
+
+For reference, the CPU implementation accelerated with Numba’s JIT compilation (see the sample code below) takes approximately 4 hours to reach $\epsilon t=3.0$. After normalizing by simulation duration, a comparison with the GPU runtime reported above suggests a GPU speedup of approximately 1.8×.
+
+
 
 #### Calculation of phases and Bayesian inference
 
-The phases are calculated on the CPU, except when the method described in Appendix B is used for temporal phases. In that case, our implementation uses GPUs to compute the Hilbert transform and perform the Fourier-based phase conversion.
+The phases are calculated on the CPU, except when the method described in Appendix B is used for temporal phases. 
+In that case, our implementation uses GPUs to compute the Hilbert transform and perform the Fourier-based phase conversion.
 The phase data require approximately the same amount of storage as the saved $\tilde{A}_i$ and $\bar{u}_i$ data.
 
 GPUs are also used to subsample the data when preparing the dataset for Bayesian inference and to perform large-scale tensor contractions and summations during the iterative updates.
@@ -183,6 +188,7 @@ Reproducing the full results reported in the paper cited above requires substant
 
 For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ and spatial phase Φ from a single trajectory of two coupled systems and compares the results with theory. 
 It runs on a CPU without PBS or a GPU.
+With the current settings, the simulation runs up to $\epsilon t \approx 3.0$ and takes approximately 4 hours.
 
 The reference environment for this notebook is:
 
@@ -199,6 +205,7 @@ The reference environment for this notebook is:
 `SampleCode/data/` contains the data required to run the notebook, including the limit-torus solution and data for the phase equations derived using the adjoint method [Arai and Kawamura, Phys. Rev. Research 7, 043079 (2025)].
 `SampleCode/output/` contains results from a previous run. 
 Re-running the notebook will overwrite output files with the same names.
+
 
 
 ## Using precomputed data

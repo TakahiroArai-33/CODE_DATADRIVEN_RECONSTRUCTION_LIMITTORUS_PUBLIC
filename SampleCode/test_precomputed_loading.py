@@ -208,7 +208,7 @@ class PrecomputedLoadingTests(unittest.TestCase):
         self.assertEqual(self.snapshot(), before)
         self.assertEqual(namespace["comparison_fig"].axes[0].get_xlim(),
                          (0.0, self.parameters["t_end"]))
-        for label, key in (("T_END", "t_end"), ("SIGMA", "sigma"),
+        for label, key in (("T_END", "t_end"),
                            ("Phi_1_over_L", "Phi_1_over_L"),
                            ("Theta_1_over_pi", "Theta_1_over_pi"),
                            ("Phi_2_over_L", "Phi_2_over_L"),
@@ -216,6 +216,10 @@ class PrecomputedLoadingTests(unittest.TestCase):
             match = re.search(rf"\b{label}\s*[:=]\s*([-+0-9.eE]+)", printed.getvalue())
             self.assertIsNotNone(match, f"Missing {label} in saved-settings output")
             self.assertEqual(float(match.group(1)), self.parameters[key])
+        match = re.search(r"\bSIGMA\^2\s*=\s*([-+0-9.eE]+)", printed.getvalue())
+        self.assertIsNotNone(match, "Missing SIGMA^2 in saved-settings output")
+        self.assertAlmostEqual(float(match.group(1)), self.parameters["sigma"] ** 2,
+                               delta=1e-6 * self.parameters["sigma"] ** 2)
 
     def test_final_save_cell_writes_typed_json_metadata(self):
         from sample_io import load_precomputed_results
