@@ -8,6 +8,21 @@ Numerical simulations were performed on the Earth Simulator (ES4) at the
 Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
 
 
+## Contents
+
+- [GPU Workflow](#gpu-workflow)
+  - [Environment](#environment)
+  - [Execution](#execution)
+    - [1. Configure the PBS job scripts](#1-configure-the-pbs-job-scripts)
+    - [2. Build the GPU container](#2-build-the-gpu-container)
+    - [3. Generate the SPDE data](#3-generate-the-spde-data)
+    - [4. Run phase calculation and Bayesian inference](#4-run-phase-calculation-and-bayesian-inference)
+    - [5. Generate the output](#5-generate-the-output)
+    - [6. Notes on GPU usage, computation time, and data storage](#6-notes-on-gpu-usage-computation-time-and-data-storage)
+- [Sample code for calculation of the phase](#sample-code-for-calculation-of-the-phase)
+- [License](#license)
+
+
 # GPU Workflow
 
 ## Environment
@@ -184,6 +199,7 @@ To use them, download and extract the files into `SampleCode/output/` and set th
 ```python
 loaddata = True
 ```
+
 
 ---
 
