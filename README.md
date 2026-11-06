@@ -199,7 +199,10 @@ The reference environment for this notebook is:
 `SampleCode/output/` contains results from a previous run. 
 Re-running the notebook will overwrite output files with the same names.
 
-Precomputed data will also be made available on Zenodo (DOI: xxx). 
+Precomputed data will also be made available on Zenodo 
+
+- DOI: xxx. 
+
 To use them, download and extract the files into `SampleCode/output/` and set the following in the notebook:
 ```python
 loaddata = True
