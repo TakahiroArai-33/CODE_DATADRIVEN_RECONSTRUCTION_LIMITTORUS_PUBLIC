@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from pathlib import Path
 
 import numpy as np
@@ -47,33 +48,16 @@ def _increasing(values, label, minimum=2):
         raise ValueError(f"{label} must contain at least {minimum} strictly increasing values")
 
 
-def _parameters(path, header):
-    parameters = {}
-    with path.open(newline="", encoding="utf-8-sig") as stream:
-        reader = csv.reader(stream)
-        next(reader)
-        for row in reader:
-            if not row:
-                continue
-            if len(row) != len(header):
-                raise ValueError(f"Invalid parameter row in {path.name}: {row!r}")
-            name, value = row[header.index("name")], row[header.index("value")]
-            if not name or name in parameters:
-                raise ValueError(f"Empty or duplicate saved parameter {name!r}")
-            parameters[name] = value
-    return parameters
-
-
 def _number(parameters, name, *, positive=False, nonnegative=False, integer=False):
     if name not in parameters:
-        raise ValueError(f"Incomplete saved dataset: parameters.csv is missing {name!r}")
+        raise ValueError(f"Incomplete saved dataset: parameters.json is missing {name!r}")
     try:
         value = float(parameters[name])
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"Saved parameter {name!r} must be numeric") from exc
+        raise ValueError(f"Parameter {name!r} in parameters.json must be numeric") from exc
     if (not np.isfinite(value) or (positive and value <= 0)
             or (nonnegative and value < 0) or (integer and value != int(value))):
-        raise ValueError(f"Invalid saved parameter {name!r}: {parameters[name]!r}")
+        raise ValueError(f"Invalid parameter {name!r} in parameters.json: {parameters[name]!r}")
     return int(value) if integer else value
 
 
@@ -88,12 +72,14 @@ def load_precomputed_results(output_dir, fallback_b_theory=None):
     output = Path(output_dir)
     specifications = {
         "trajectory.csv": TRAJECTORY_COLUMNS,
-        "parameters.csv": ("name", "value"),
         "final_state.csv": ("rx", "U1", "V1", "U2", "V2"),
         "phase_comparison.csv": PHASE_COLUMNS,
         "B_estimated.csv": ("theta", "B1", "B2"),
     }
     missing = [name for name in specifications if not (output / name).is_file()]
+    parameter_path = output / "parameters.json"
+    if not parameter_path.is_file():
+        missing.append("parameters.json")
     theory_path = output / "B_theory.csv"
     if not theory_path.is_file():
         theory_path = Path(fallback_b_theory) if fallback_b_theory is not None else theory_path
@@ -109,7 +95,10 @@ def load_precomputed_results(output_dir, fallback_b_theory=None):
     coefficient_columns = ("n", "cos1", "sin1", "cos2", "sin2")
     coefficient_header = (_header(coefficient_path, coefficient_columns)
                           if coefficient_path.is_file() else None)
-    parameters = _parameters(output / "parameters.csv", headers["parameters.csv"])
+    parameters = json.loads(parameter_path.read_text(encoding="utf-8"))
+    if (not isinstance(parameters, dict)
+            or any(isinstance(value, (dict, list)) for value in parameters.values())):
+        raise ValueError("parameters.json must contain a flat JSON object")
     restored = {
         "dt": _number(parameters, "dt", positive=True),
         "epsilon": _number(parameters, "epsilon", nonnegative=True),
@@ -123,11 +112,12 @@ def load_precomputed_results(output_dir, fallback_b_theory=None):
         "c2": _number(parameters, "c2"),
     }
     if restored["seed"] >= 2**32:
-        raise ValueError("Saved seed must be in [0, 2**32)")
+        raise ValueError("Saved seed in parameters.json must be in [0, 2**32)")
     _number(parameters, "simulation_seconds", nonnegative=True)
-    for name in ("Phi1_initial", "Theta1_initial", "Phi2_initial", "Theta2_initial"):
+    for name in ("Phi1_initial", "Theta1_initial", "Phi2_initial", "Theta2_initial",
+                 "Phi_1_over_L", "Theta_1_over_pi", "Phi_2_over_L", "Theta_2_over_pi"):
         _number(parameters, name)
-    saved_t_end = _number(parameters, "t_end", nonnegative=True) if "t_end" in parameters else None
+    saved_t_end = _number(parameters, "t_end", nonnegative=True)
     # Restore and validate the smaller files before allocating large arrays.
     final = _numeric(output / "final_state.csv", specifications["final_state.csv"], headers["final_state.csv"])
     _increasing(final["rx"], "Saved spatial grid")
@@ -168,6 +158,6 @@ def load_precomputed_results(output_dir, fallback_b_theory=None):
     return {
         **restored, "parameters": parameters, "moments": moments, "rx": rx,
         "L": restored["domain_length"] / 2,
-        "t_end": saved_t_end if saved_t_end is not None else restored["epsilon"] * trajectory["t"][-1],
+        "t_end": saved_t_end,
         "phase": phase, "B1": fitted[0], "B2": fitted[1], "b_theory": b_theory,
     }

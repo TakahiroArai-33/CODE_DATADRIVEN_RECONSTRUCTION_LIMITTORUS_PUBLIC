@@ -27,7 +27,7 @@ Results are written to a new folder under `SampleCode/output_runs/`:
   sigma_1e-06/
     trajectory.csv
     final_state.csv
-    parameters.csv
+    parameters.json
     phase_comparison.csv
     B_estimated.csv
     B_coefficients.csv
@@ -68,6 +68,11 @@ In the notebook, `loaddata = True` loads the saved trajectory, phases,
 theoretical predictions, and estimated B curves. It restores the parameters
 used to generate those results instead of using the current simulation or
 analysis settings, and displays the figures without overwriting saved files.
-The complete output folder is required, including `phase_comparison.csv`
-and `B_estimated.csv`. New runs also save the reference B curve as
+The complete output folder is required, including `parameters.json`,
+`phase_comparison.csv`, and `B_estimated.csv`. `parameters.json` records the
+run settings, including the four initial phase values exactly as entered
+(`Phi_1_over_L`, `Theta_1_over_pi`, `Phi_2_over_L`, `Theta_2_over_pi`).
+With `loaddata = True`, the notebook displays these saved values together
+with `T_END` and `SIGMA` before loading the numerical results.
+New runs also save the reference B curve as
 `B_theory.csv`; older output folders use `data/B_theory.csv` as a fallback.

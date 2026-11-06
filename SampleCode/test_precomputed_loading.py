@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
-from contextlib import ExitStack
+from contextlib import ExitStack, redirect_stdout
 import hashlib
+import io
+import json
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -47,13 +50,15 @@ class PrecomputedLoadingTests(unittest.TestCase):
             "save_interval": 1000.0, "domain_length": 250.0,
             "t_end": 0.06, "section": 6.5, "b_harmonics": 2,
             "c1": 0.04, "c2": 0.05, "simulation_seconds": 12.5,
-            "Phi1_initial": 20.0, "Theta1_initial": 0.4,
-            "Phi2_initial": 5.0, "Theta2_initial": 0.1,
+            "Phi1_initial": 74.951171875, "Theta1_initial": 1.5700,
+            "Phi2_initial": 5.126953125, "Theta2_initial": 0.1104,
+            "Phi_1_over_L": 0.60, "Theta_1_over_pi": 0.5,
+            "Phi_2_over_L": 0.041, "Theta_2_over_pi": 0.035,
             "b_method": "estimated", "b_source": "estimated_from_trajectory",
             "b_trim_cycles": 1, "b_offset1": 0.0, "b_offset2": 0.0,
             "b_fit_cycles1": 3, "b_fit_cycles2": 4,
         }
-        self.csv("parameters.csv", list(self.parameters.items()), "name,value", fmt="%s")
+        (self.output / "parameters.json").write_text(json.dumps(self.parameters))
 
         amplitude1 = np.exp(1j * self.t / 10000.0)
         amplitude2 = 2.0 * np.exp(1j * self.t / 12000.0)
@@ -159,7 +164,9 @@ class PrecomputedLoadingTests(unittest.TestCase):
         namespace = {"__name__": "__main__", "__file__": str(notebook),
                      "__run_overrides__": overrides}
         before = self.snapshot()
+        printed = io.StringIO()
         with ExitStack() as stack:
+            stack.enter_context(redirect_stdout(printed))
             functions = [(spde_cpu, "simulate"),
                          (run_single_trajectory, "initial_states_from_phases")]
             functions.extend((phase_analysis, name) for name in (
@@ -187,9 +194,9 @@ class PrecomputedLoadingTests(unittest.TestCase):
             self.assertEqual(namespace[name], self.parameters[key])
         for system in (1, 2):
             self.assertEqual(namespace[f"Phi_{system}_over_L"],
-                             self.parameters[f"Phi{system}_initial"] / 125.0)
+                             self.parameters[f"Phi_{system}_over_L"])
             self.assertEqual(namespace[f"Theta_{system}_over_pi"],
-                             self.parameters[f"Theta{system}_initial"] / np.pi)
+                             self.parameters[f"Theta_{system}_over_pi"])
         self.assertEqual(namespace["simulation_seconds"], self.parameters["simulation_seconds"])
         np.testing.assert_array_equal(namespace["t_phase"], self.phase_t)
         np.testing.assert_array_equal(namespace["theory"], self.theory)
@@ -201,6 +208,71 @@ class PrecomputedLoadingTests(unittest.TestCase):
         self.assertEqual(self.snapshot(), before)
         self.assertEqual(namespace["comparison_fig"].axes[0].get_xlim(),
                          (0.0, self.parameters["t_end"]))
+        for label, key in (("T_END", "t_end"), ("SIGMA", "sigma"),
+                           ("Phi_1_over_L", "Phi_1_over_L"),
+                           ("Theta_1_over_pi", "Theta_1_over_pi"),
+                           ("Phi_2_over_L", "Phi_2_over_L"),
+                           ("Theta_2_over_pi", "Theta_2_over_pi")):
+            match = re.search(rf"\b{label}\s*[:=]\s*([-+0-9.eE]+)", printed.getvalue())
+            self.assertIsNotNone(match, f"Missing {label} in saved-settings output")
+            self.assertEqual(float(match.group(1)), self.parameters[key])
+
+    def test_final_save_cell_writes_typed_json_metadata(self):
+        from sample_io import load_precomputed_results
+
+        saved = load_precomputed_results(self.output)
+        document = json.loads((HERE / "Test.ipynb").read_text())
+        sources = ["".join(cell.get("source", [])) for cell in document["cells"]
+                   if cell.get("cell_type") == "code"]
+        initial_save = next(source for source in sources if "trajectory.csv" in source
+                            and "np.savetxt" in source and "init_info" in source)
+        final_save = next(source for source in sources if "phase_comparison.csv" in source
+                          and "json.dump" in source)
+        namespace = {
+            "np": np, "json": json, "loaddata": False, "OUTPUT_DIR": self.output,
+            "moments": saved["moments"], "rx": saved["rx"],
+            "DT": self.parameters["dt"], "SIGMA": self.parameters["sigma"],
+            "SEED": self.parameters["seed"], "T_END": self.parameters["t_end"],
+            "SAVE_INTERVAL": self.parameters["save_interval"],
+            "DOMAIN_LENGTH": self.parameters["domain_length"],
+            "simulation_seconds": self.parameters["simulation_seconds"],
+            "init_info": {"phi1": self.parameters["Phi1_initial"],
+                          "theta1": self.parameters["Theta1_initial"],
+                          "phi2": self.parameters["Phi2_initial"],
+                          "theta2": self.parameters["Theta2_initial"]},
+            "t_phase": self.phase_t,
+            "EPSILON": self.parameters["epsilon"],
+            "delta_phi": self.phase[:, 2], "delta_theta": self.phase[:, 3],
+            "theory": self.theory, "Phi1": self.phase[:, 6],
+            "Theta1": self.phase[:, 7], "Phi2": self.phase[:, 8],
+            "Theta2": self.phase[:, 9],
+            "common1": np.ones(self.phase_t.size, dtype=bool),
+            "common2": np.ones(self.phase_t.size, dtype=bool),
+            "B1": saved["B1"], "B2": saved["B2"],
+            "B_HARMONICS": self.parameters["b_harmonics"],
+            "bx1": self.b_theta, "by1": self.b1,
+            "bx2": self.b_theta, "by2": self.b2,
+            "b_theory": saved["b_theory"], "c1": self.parameters["c1"],
+            "c2": self.parameters["c2"], "SECTION": self.parameters["section"],
+            "b1": [None] * 3, "b2": [None] * 4,
+            "timeseries_fig": Mock(), "comparison_fig": Mock(), "b_fig": Mock(),
+        }
+        for key in ("Phi_1_over_L", "Theta_1_over_pi", "Phi_2_over_L", "Theta_2_over_pi"):
+            namespace[key] = self.parameters[key]
+        (self.output / "parameters.json").write_text('{"stale": true}')
+        exec(compile(initial_save, "Test.ipynb:save-trajectory", "exec"), namespace)
+        exec(compile(final_save, "Test.ipynb:save-results", "exec"), namespace)
+        parameters = json.loads((self.output / "parameters.json").read_text())
+        for key in ("dt", "epsilon", "sigma", "save_interval", "domain_length",
+                    "t_end", "c1", "c2", "section", "Phi_1_over_L", "Theta_1_over_pi",
+                    "Phi_2_over_L", "Theta_2_over_pi"):
+            self.assertIsInstance(parameters[key], float, key)
+            self.assertEqual(parameters[key], self.parameters[key], key)
+        for key in ("seed", "b_harmonics", "b_trim_cycles", "b_fit_cycles1", "b_fit_cycles2"):
+            self.assertIsInstance(parameters[key], int, key)
+            self.assertEqual(parameters[key], self.parameters[key], key)
+        self.assertNotIn("stale", parameters)
+        self.assertFalse((self.output / "parameters.csv").exists())
 
 
 if __name__ == "__main__":
