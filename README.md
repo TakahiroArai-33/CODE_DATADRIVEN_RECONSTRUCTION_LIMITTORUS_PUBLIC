@@ -124,22 +124,34 @@ By default, the script reads the result generated in
 
 
 
-### 6. Notes on GPU usage and computational time
+### 6. Notes on GPU usage, computation time, and data storage
 
-#### SPDE
+Although our code uses GPUs, the method itself does not inherently require a GPU. 
+The most computationally demanding step is data generation through SPDE simulations, as a large number of long trajectories are required.
+The method we proposed in the above reference has a relatively low computational cost.
+Below, we summarize the hardware used, computation times, and storage requirements.
 
-Generating the SPDE data is the most time-consuming step. With the current parameters, each long trajectory takes approximately 7 hours on one GPU. In our experiments, generating 64 long trajectories for a single value of σ took approximately 2 days, with 10 GPU jobs running in parallel using the PBS job scheduler.
 
-Although we used NVIDIA A100 GPUs in our experiments, each SPDE simulation uses only 1,024 distinct spatial grid points. Less powerful GPUs may also be suitable, although their performance has not been evaluated. The SPDE simulations could, in principle, also be performed on a CPU.
+#### SPDE simulations
 
-#### Phase calculation and Bayesian inference
+With the parameter settings used in this study, generating a single long trajectory took approximately 7 hours on one NVIDIA A100 GPU. 
+Generating 64 long trajectories for a single value of σ took approximately 2 days, with 10 GPU jobs running in parallel under the PBS job scheduler.
 
-Temporal phases are obtained by linear interpolation on the CPU. The Appendix B method uses GPUs for the Hilbert transform and Fourier-based phase conversion.
+Each SPDE simulation uses a spatial grid with 1,024 distinct points. Less powerful GPUs may also be suitable, although their performance has not been evaluated. In principle, these simulations could also be performed on a CPU.
 
-GPUs are also used for data subsampling when preparing the dataset for Bayesian inference and for large-scale tensor contractions and summations during the iterative updates.
-The iterative Bayesian updates took approximately 100 seconds in total for both systems (three updates per system), excluding data loading, preprocessing, basis construction, and output generation. Data subsampling was not timed separately.
+The saved data require approximately 700 MB per long trajectory, or approximately 45 GB for all 64 trajectories at each value of σ. 
+The stored time series contain $\tilde{A}_i$ and $\bar{u}_i$, with a sampling interval of 1.0; the full spatial profiles of $X_i(x,t)$ are not saved at every sampling time.
 
-Overall, data processing and Bayesian inference, including file input and output, are expected to take approximately two hours per value of σ.
+#### Calculation of phases and Bayesian inference
+
+The entire procedure for calculating the phases is performed on the CPU. However, when temporal phases are calculated using the method described in Appendix B, our implementation uses GPUs to compute the Hilbert transform and perform the Fourier-based phase conversion.
+The resulting phase data require approximately the same amount of storage as the saved $\tilde{A}$ and $\bar{u}_k$ data.
+
+GPUs are also used to subsample the data when preparing the dataset for Bayesian inference and to perform large-scale tensor contractions and summations during the iterative updates.
+
+The Bayesian updates took approximately 100 seconds in total across both systems, with three updates per system. This timing excludes data loading, preprocessing, basis construction, and output generation. Data subsampling was not timed separately.
+
+Once the SPDE data have been generated, the complete data-processing and Bayesian-inference workflow, including file input and output, is expected to take approximately 2 hours per value of σ.
 
 
 ----
