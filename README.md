@@ -18,7 +18,7 @@ Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
       - [Set options with an environment variable](#set-options-with-an-environment-variable)
     - [2. Build the GPU container](#2-build-the-gpu-container)
     - [3. Generate the SPDE data](#3-generate-the-spde-data)
-    - [4. Run phase calculation and Bayesian inference](#4-run-phase-calculation-and-bayesian-inference)
+    - [4. Calculate the phases and perform Bayesian inference](#4-calculate-the-phases-and-perform-bayesian-inference)
     - [5. Generate the output](#5-generate-the-output)
     - [6. Notes on GPU usage, computation time, and data storage](#6-notes-on-gpu-usage-computation-time-and-data-storage)
       - [SPDE simulations](#spde-simulations)
@@ -117,9 +117,9 @@ bash SRC/All_SPDE_run_short.sh
 `SRC/All_SPDE_run_short.sh` submits `SRC/wfl_run_SPDE_short.sh`.
 Wait for all PBS jobs to finish before continuing.
 
-### 4. Run phase calculation and Bayesian inference
+### 4. Calculate the phases and perform Bayesian inference
 
-Submit the following wfl script with `qsub`, adding any queue and GPU resource
+Submit the following PBS job script with `qsub`, adding any queue and GPU resource
 options required by the cluster:
 
 ```bash
@@ -163,8 +163,8 @@ The stored time series contain $\tilde{A}_i$ and $\bar{u}_i$, with a sampling in
 
 #### Calculation of phases and Bayesian inference
 
-The entire procedure for calculating the phases is performed on the CPU. However, when temporal phases are calculated using the method described in Appendix B, our implementation uses GPUs to compute the Hilbert transform and perform the Fourier-based phase conversion.
-The resulting phase data require approximately the same amount of storage as the saved $\tilde{A}$ and $\bar{u}_k$ data.
+The phases are calculated on the CPU, except when the method described in Appendix B is used for temporal phases. In that case, our implementation uses GPUs to compute the Hilbert transform and perform the Fourier-based phase conversion.
+The phase data require approximately the same amount of storage as the saved $\tilde{A}_i$ and $\bar{u}_i$ data.
 
 GPUs are also used to subsample the data when preparing the dataset for Bayesian inference and to perform large-scale tensor contractions and summations during the iterative updates.
 
