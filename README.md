@@ -150,6 +150,7 @@ The most computationally demanding step is data generation through SPDE simulati
 The method we proposed in the above reference has a relatively low computational cost.
 Below, we summarize the hardware used, computation times, and storage requirements.
 
+Storing the generated time series and phase data for all values of $\sigma$ used in this study requires approximately 1 TB of storage.
 
 #### SPDE simulations
 
