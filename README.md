@@ -14,12 +14,16 @@ Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
   - [Environment](#environment)
   - [Execution](#execution)
     - [1. Configure the PBS job scripts](#1-configure-the-pbs-job-scripts)
+      - [Set options in the scripts](#set-options-in-the-scripts)
+      - [Set options with an environment variable](#set-options-with-an-environment-variable)
     - [2. Build the GPU container](#2-build-the-gpu-container)
     - [3. Generate the SPDE data](#3-generate-the-spde-data)
     - [4. Run phase calculation and Bayesian inference](#4-run-phase-calculation-and-bayesian-inference)
     - [5. Generate the output](#5-generate-the-output)
     - [6. Notes on GPU usage, computation time, and data storage](#6-notes-on-gpu-usage-computation-time-and-data-storage)
-- [Sample code for calculation of the phase](#sample-code-for-calculation-of-the-phase)
+      - [SPDE simulations](#spde-simulations)
+      - [Calculation of phases and Bayesian inference](#calculation-of-phases-and-bayesian-inference)
+- [Sample code for calculating phases in a local environment](#sample-code-for-calculating-phases-in-a-local-environment)
 - [License](#license)
 
 
@@ -171,12 +175,12 @@ Once the SPDE data have been generated, the complete data-processing and Bayesia
 
 ----
 
-# Sample code for calculation of the phase
+# Sample code for calculating phases in a local environment
 
-Reproducing the full results reported in the cited paper is computationally intensive and generates large amounts of data.
-The workflow described above uses GPUs and the PBS job scheduler.
+Reproducing the full results reported in the paper cited above requires substantial computation time and a large amount of storage space.
 
-For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ and spatial phase Φ from a single trajectory of two coupled systems and compares the results with theory. It runs on a CPU without PBS or a GPU.
+For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ and spatial phase Φ from a single trajectory of two coupled systems and compares the results with theory. 
+It runs on a CPU without PBS or a GPU.
 
 The reference environment for this notebook is:
 
