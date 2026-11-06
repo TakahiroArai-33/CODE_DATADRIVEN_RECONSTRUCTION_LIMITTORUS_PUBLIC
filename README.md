@@ -205,6 +205,7 @@ Precomputed data will also be made available on Zenodo
 
 To use them, download and extract the files into `SampleCode/output/` and set the following in the notebook:
 ```python
+# Note: running with loaddata = False will overwrite existing output files.
 loaddata = True
 ```
 
