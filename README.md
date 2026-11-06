@@ -24,7 +24,7 @@ Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
       - [SPDE simulations](#spde-simulations)
       - [Calculation of phases and Bayesian inference](#calculation-of-phases-and-bayesian-inference)
 - [Sample code for calculating phases in a local environment](#sample-code-for-calculating-phases-in-a-local-environment)
-      - [Using precomputed data](#using-precomputed-data)
+  - [Using precomputed data](#using-precomputed-data)
 - [License](#license)
 
 
@@ -201,11 +201,12 @@ The reference environment for this notebook is:
 Re-running the notebook will overwrite output files with the same names.
 
 
-#### Using precomputed data
+## Using precomputed data
 
 Precomputed data are also available on Zenodo.
 
-- DOI: xxx
+- Precomputed sample data for “Data-driven reconstruction of spatiotemporal phase dynamics for traveling and oscillating patterns via Bayesian inference” (tentative)
+
 
 To use them, download and extract the files into `SampleCode/output/` and set the following in the notebook:
 
