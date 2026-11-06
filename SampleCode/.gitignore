@@ -1,4 +1,5 @@
 output*/
+output*.zip
 __pycache__/
 .mplconfig/
 .ipynb_checkpoints/
