@@ -216,6 +216,7 @@ loaddata = True
 ```
 
 When `loaddata = True`, the SPDE simulation is skipped, and the data stored in `output/` are loaded and plotted.
+The saved parameters are restored, and the saved phases and theoretical predictions are used directly.
 
 When `loaddata = False`, the SPDE simulation is run, and the existing files in `output/` are overwritten.
 

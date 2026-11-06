@@ -11,9 +11,8 @@ python SampleCode/run_sigma_sweep.py --sigmas 1e-6 1e-5 --jobs 2
 ```
 
 Each process runs one coupled trajectory on the CPU. Unless overridden,
-the notebook settings apply, including `T_END = 8.0`, `EPSILON = 1e-6`,
-`DT = 0.01`, `SAVE_INTERVAL = 1.0`, and `SEED = 12345`.
-The same seed means that different noise amplitudes use the same underlying
+the simulation settings in `Test.ipynb` at launch time apply.
+When the same seed is used, different noise amplitudes use the same underlying
 standardized random sequence, scaled by sigma.
 
 Results are written to a new folder under `SampleCode/output_runs/`:
@@ -33,6 +32,7 @@ Results are written to a new folder under `SampleCode/output_runs/`:
     B_estimated.csv
     B_coefficients.csv
     B_samples.csv
+    B_theory.csv
     timeseries.png
     comparison.png
     B_estimation.png
@@ -63,3 +63,11 @@ python SampleCode/run_test.py --sigma 1e-6 \
 The notebook's time-series figure uses the window `t = 20000` to `30000`.
 Keep the simulated duration beyond that window when running its full workflow.
 All sampled rows and the notebook's CSV precision are preserved.
+
+In the notebook, `loaddata = True` loads the saved trajectory, phases,
+theoretical predictions, and estimated B curves. It restores the parameters
+used to generate those results instead of using the current simulation or
+analysis settings, and displays the figures without overwriting saved files.
+The complete output folder is required, including `phase_comparison.csv`
+and `B_estimated.csv`. New runs also save the reference B curve as
+`B_theory.csv`; older output folders use `data/B_theory.csv` as a fallback.
