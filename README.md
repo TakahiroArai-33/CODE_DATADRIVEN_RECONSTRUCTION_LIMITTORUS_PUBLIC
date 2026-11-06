@@ -24,6 +24,7 @@ Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
       - [SPDE simulations](#spde-simulations)
       - [Calculation of phases and Bayesian inference](#calculation-of-phases-and-bayesian-inference)
 - [Sample code for calculating phases in a local environment](#sample-code-for-calculating-phases-in-a-local-environment)
+      - [Using precomputed data](#using-precomputed-data)
 - [License](#license)
 
 
@@ -199,15 +200,23 @@ The reference environment for this notebook is:
 `SampleCode/output/` contains results from a previous run. 
 Re-running the notebook will overwrite output files with the same names.
 
-Precomputed data will also be made available on Zenodo 
 
-- DOI: xxx. 
+#### Using precomputed data
+
+Precomputed data are also available on Zenodo.
+
+- DOI: xxx
 
 To use them, download and extract the files into `SampleCode/output/` and set the following in the notebook:
+
 ```python
 # Note: running with loaddata = False will overwrite existing output files.
 loaddata = True
 ```
+
+When `loaddata = True`, the SPDE simulation is skipped, and the data stored in `output/` are loaded and plotted.
+
+When `loaddata = False`, the SPDE simulation is run, and the existing files in `output/` are overwritten.
 
 
 ---
