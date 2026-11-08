@@ -191,6 +191,7 @@ With the current settings, the simulation runs up to $\epsilon t \approx 3.0$ an
 
 The reference environment for this notebook is:
 
+- Hardware: Apple M4 Max / 128 GB
 - Python 3.10.18
 - NumPy 1.26.4
 - SciPy 1.12.0
