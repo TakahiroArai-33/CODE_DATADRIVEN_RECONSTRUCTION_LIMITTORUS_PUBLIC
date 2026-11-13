@@ -1,7 +1,8 @@
 """CPU port of the tensor estimator in SRC/Module_Bayes_GPU.py.
 
-The GPU execution path is preserved: explicit G/partial-G tensors, chunked
-contractions, update order, conditioning diagnostics, and convergence checks.
+Explicit G/partial-G tensors, update order, and convergence checks follow
+the GPU estimator. Contractions use all samples
+at once, without chunking.
 CuPy operations and host transfers are replaced with NumPy operations.
 The fit/evaluate_nonconstant API remains compatible with Test_Bayes.ipynb.
 """
@@ -33,7 +34,6 @@ class BayesianEstimator:
         self.L = params["L"]  # Half the spatial domain length
         self.rtol = float(params.get("rtol", 1e-5))  # Relative convergence tolerance
         self.complex64 = bool(params.get("complex64", False))
-        self.gpu_chunk = int(params.get("gpu_chunk", 20))
 
         # Estimate a diagonal phase-noise covariance matrix when true.
         self.noise_cov_zero = bool(params.get("noise_cov_zero", False))
@@ -275,19 +275,8 @@ class BayesianEstimator:
 
         #* --- Residuals for E update ---
         # G:size (2, 2R, N), a_old:size(2R,)
-        # Use the GPU execution path's chunked tensor product on the CPU.
-        array_cpu = np.zeros((2, N), dtype=np.complex128)
-        a_old_cpu = np.asarray(a_old)
-        for i in range(self.gpu_chunk):
-            # Original GPU chunk bounds, retained for the CPU calculation.
-            s = int(i * N / self.gpu_chunk)
-            e = int((i + 1) * N / self.gpu_chunk)
-            #*
-            G_normal_cpu = np.asarray(G_normal[:, :, s:e])
-            array_cpu[:, s:e] = np.tensordot(G_normal_cpu, a_old_cpu, axes=([1], [0]))
-        Ga = np.asarray(array_cpu)
+        Ga = np.tensordot(G_normal, a_old, axes=([1], [0]))
         residual = (dot_chi - Ga).real  # Real-valued residual, shape (2, N)
-        del array_cpu, a_old_cpu, G_normal_cpu
 
 
         #* --- E update ---
@@ -310,18 +299,8 @@ class BayesianEstimator:
         Einv_G = np.tensordot(Einv, G_normal, axes=([1], [0]))  # size (2, 2R, N)
         # Sum G_n^H (E_inv G_n) over n with einsum.
 
-        # Use the GPU execution path's chunked contraction on the CPU.
-        array_cpu = np.zeros_like(Xi_prior, dtype=np.complex128)
-        for i in range(self.gpu_chunk):
-            # Original GPU chunk bounds, retained for the CPU calculation.
-            s = int(i * N / self.gpu_chunk)
-            e = int((i + 1) * N / self.gpu_chunk)
-            #*
-            G_normal_H_cpu = np.asarray(G_normal_H[:, :, s:e])
-            Einv_G_cpu = np.asarray(Einv_G[:, :, s:e])
-            array_cpu += np.einsum('kin,iqn->kq', G_normal_H_cpu, Einv_G_cpu, optimize=True)
-        Xi_new = Xi_prior + Delta_t * np.asarray(array_cpu)
-        del array_cpu, G_normal_H_cpu, Einv_G_cpu
+        Xi_new = Xi_prior + Delta_t * np.einsum(
+            'kin,iqn->kq', G_normal_H, Einv_G, optimize=True)
 
         # Enforce Hermitian symmetry against numerical roundoff.
         Xi_new = (Xi_new + Xi_new.conj().T) / 2
@@ -333,24 +312,10 @@ class BayesianEstimator:
         # G: size (2, 2R, N)
         E_inv_dotchi = Einv @ dot_chi  # size (2, N)
 
-        # Use the GPU execution path's chunked contractions on the CPU.
-        e_vec_cpu = np.asarray(e_vec)
-        sum_GH_Einv_dotchi_cpu = np.zeros_like(a_old, dtype=np.complex128)
-        sum_partial_cpu = np.zeros_like(a_old, dtype=np.complex128)
-        for i in range(self.gpu_chunk):
-            # Original GPU chunk bounds, retained for the CPU calculation.
-            s = int(i * N / self.gpu_chunk)
-            e = int((i + 1) * N / self.gpu_chunk)
-            #*
-            G_normal_H_cpu = np.asarray(G_normal_H[:, :, s:e])
-            E_inv_dotchi_cpu = np.asarray(E_inv_dotchi[:, s:e])
-            sum_GH_Einv_dotchi_cpu += np.einsum('kin,in->k', G_normal_H_cpu, E_inv_dotchi_cpu, optimize=True)
-            #*
-            G_partial_H_cpu = np.asarray(G_partial_H[:, :, s:e])
-            sum_partial_cpu += np.einsum('kin,i->k', G_partial_H_cpu, e_vec_cpu, optimize=True)
-        sum_GH_Einv_dotchi = np.asarray(sum_GH_Einv_dotchi_cpu)
-        sum_partial = np.asarray(sum_partial_cpu)
-        del e_vec_cpu, G_normal_H_cpu, E_inv_dotchi_cpu, G_partial_H_cpu
+        sum_GH_Einv_dotchi = np.einsum(
+            'kin,in->k', G_normal_H, E_inv_dotchi, optimize=True)
+        sum_partial = np.einsum(
+            'kin,i->k', G_partial_H, e_vec, optimize=True)
 
         # Calculate r using the fixed prior mean.
         r = Xi_prior @ a_prior + Delta_t * sum_GH_Einv_dotchi - (Delta_t / 2.0) * sum_partial
@@ -414,13 +379,6 @@ class BayesianEstimator:
             Xi_old = self.Xi.copy()
             E_old = self.E.copy()
 
-            # Report conditioning before each update.
-            lamE  = np.linalg.eigvalsh(E_old)              # 2x2
-            lamXi = np.linalg.eigvalsh(Xi_old.real)        # 2R x 2R
-            print(f"Before update {i:d}: parameter check")
-            print("min λ(E):", lamE.min(), "  min λ(Xi):", lamXi.min(),
-                "  cond(Xi):", np.linalg.cond(Xi_old.real), "  ||a||:", np.linalg.norm(a_old))
-
             if i == 1:
                 # Store the initial state.
                 a_list.append(a_old)
@@ -441,7 +399,6 @@ class BayesianEstimator:
             # Use the relative change in a as the convergence criterion.
             denom = np.linalg.norm(a_old)
             rel_error_a = np.linalg.norm(a_new - a_old) / max(denom, 1e-8)
-            print(f"Iteration {i}: Relative error in a = {rel_error_a:.6e}", flush=True)
             error_list.append(rel_error_a)
 
             te_upd = time.time()
@@ -461,19 +418,19 @@ class BayesianEstimator:
 
 
 def fit(delta_phase, velocity, Delta_t, L, Ms=20, Mt=5,
-        max_iterations=50, rtol=1e-5, *, gpu_chunk=50,
+        max_iterations=50, rtol=1e-5, *,
         complex64=False, noise_cov_zero=False):
     """Run the original GPU estimator's tensor algorithm using only NumPy.
 
-    Inputs have shape (N, 2), ordered (Phi, Theta). ``gpu_chunk`` retains
-    the GPU workflow's number of chunks so that only the backend changes.
-    G and partial G are stored explicitly; no sufficient statistics are cached.
+    Inputs have shape (N, 2), ordered (Phi, Theta). All samples are contracted
+    at once. G and partial G are stored explicitly; no sufficient statistics
+    are cached.
     """
     delta_phase = np.asarray(delta_phase)
     velocity = np.asarray(velocity)
     zero = np.zeros(len(velocity))
     estimator = BayesianEstimator(Ms=Ms, Mt=Mt, params={
-        "L": L, "rtol": rtol, "gpu_chunk": gpu_chunk,
+        "L": L, "rtol": rtol,
         "complex64": complex64, "noise_cov_zero": noise_cov_zero,
     })
     _, errors = estimator.map_method(
