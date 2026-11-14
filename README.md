@@ -24,7 +24,7 @@ Japan Agency for Marine-Earth Science and Technology (JAMSTEC).
       - [SPDE simulations](#spde-simulations)
       - [Calculation of phases and Bayesian inference](#calculation-of-phases-and-bayesian-inference)
 - [Sample code for a local environment](#sample-code-for-a-local-environment)
-  - [Calculation of phase](#calculation-of-phase)
+  - [Calculation of spatiotemporal phases](#calculation-of-spatiotemporal-phases)
   - [Bayesian inference](#bayesian-inference)
 - [License](#license)
 
@@ -199,28 +199,16 @@ which run on a CPU without PBS or a GPU. The reference environment is:
 - ipykernel 6.30.1
 - ipywidgets 8.1.7
 
-## Calculation of phase
+## Calculation of spatiotemporal phases
 
-Reproducing the full results reported in the paper requires substantial
-computation time and storage. For a smaller example,
-[`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the temporal phase Θ
-and spatial phase Φ from a single trajectory of two coupled Gray–Scott models
-and compares the results with theory. With the default settings, the simulation
-runs up to $\epsilon t \approx 3.0$ and takes approximately 4 hours.
+Reproducing the full results reported in the paper requires substantial computation time and storage. For a smaller example, [`SampleCode/Test.ipynb`](SampleCode/Test.ipynb) calculates the spatiotemporal phases (temporal phase $\Theta$ and spatial phase $\phi$) from a single trajectory of two coupled Gray–Scott models and compares the results with theory. With the default settings, the simulation runs up to $\epsilon t \approx 3.0$ and takes approximately 4 hours.
 
-`SampleCode/data/` contains the required reference data, including the
-limit-torus solution and phase-equation data derived using the adjoint method
-[Arai and Kawamura, Phys. Rev. Research 7, 043079 (2025)]. Results are saved in
-`SampleCode/output/`. Re-running the notebook with `loaddata = False` overwrites
-output files with the same names.
+`SampleCode/data/` contains the required reference data, including the limit-torus solution and phase-equation data derived using the adjoint method [Arai and Kawamura, Phys. Rev. Research 7, 043079 (2025)]. Results are saved in `SampleCode/output/`. Re-running the notebook with `loaddata = False` overwrites output files with the same names.
+
 
 ## Bayesian inference
 
-In the study, phases are calculated from Gray–Scott model simulation data and
-used for Bayesian inference. Note that this sample,
-[`SampleCode/Test_Bayes.ipynb`](SampleCode/Test_Bayes.ipynb), instead generates
-data directly from the known phase equations with added noise and uses these
-data for inference.
+In the study, phases are calculated from Gray–Scott model simulation data and used for Bayesian inference. Note that this sample, [`SampleCode/Test_Bayes.ipynb`](SampleCode/Test_Bayes.ipynb), instead generates data directly from the known phase equations with added noise and uses these data for inference.
 
 
 ---
